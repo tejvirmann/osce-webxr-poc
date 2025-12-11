@@ -596,6 +596,28 @@ OPENAI_API_KEY=your_key_here
 
 ---
 
+## 📚 References
+
+### Initial Inspiration Sources
+
+1. **MedVR Education - Patient Assessment Marketplace**
+   - URL: https://medvr.education/marketplace_category/patient-assessment/
+   - Description: Commercial VR-based medical training platform showcasing patient assessment scenarios and clinical simulations. Demonstrates the market need and existing approaches to VR medical education.
+
+2. **CLiVR: Conversational Learning System in Virtual Reality with AI-Powered Patients**
+   - URL: https://arxiv.org/html/2510.19031v1
+   - Description: Research paper presenting a VR system that integrates LLMs, speech processing, and 3D avatars for doctor-patient interaction training. Key inspiration for AI-driven conversational VR medical training with sentiment analysis and real-time feedback.
+
+3. **Venge.io - FPS.io Game**
+   - URL: https://venge.io/#
+   - Description: Browser-based multiplayer FPS game built with PlayCanvas, demonstrating scalable WebGL/WebXR game architecture and real-time multiplayer capabilities in the browser without downloads.
+
+4. **PlayCanvas WebGL Game Engine**
+   - URL: https://playcanvas.com/
+   - Description: Web-based 3D game engine and editor platform. Showcases the feasibility of building complex 3D experiences directly in the browser, supporting WebXR and cross-platform deployment.
+
+---
+
 ## 📄 Document Version
 
 **Created**: 2024  

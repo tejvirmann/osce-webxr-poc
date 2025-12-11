@@ -99,3 +99,4 @@ class GenerationAPI:
 # Global instance
 generation_api = GenerationAPI() if MESHY_API_KEY else None
 
+

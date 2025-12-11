@@ -48,3 +48,4 @@ This project uses these external services:
 - If you don’t set `MESHY_API_KEY`: generative character creation won’t work; use your own GLB assets via the loader instead.
 - Scenes: scene generation via World Labs Marble can be added; currently stubbed.
 
+
