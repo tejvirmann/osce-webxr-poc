@@ -1,7 +1,10 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { CameraController } from './camera-controller.js';
 import { WebXRManager } from './webxr-manager.js';
+import { AssetLoader } from './asset-loader.js';
+import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader.js';
 
 export class SceneManager {
     private scene: THREE.Scene;
@@ -10,11 +13,15 @@ export class SceneManager {
     private character: THREE.Group | null = null;
     private cameraController: CameraController | null = null;
     private webXRManager: WebXRManager | null = null;
+    private assetLoader: AssetLoader;
+    private ambientLight: THREE.AmbientLight;
+    private keyLight: THREE.DirectionalLight;
+    private qualityMode: 'default' | 'high' = 'default';
     
     constructor(container: HTMLElement) {
         // Scene setup
         this.scene = new THREE.Scene();
-        this.scene.background = new THREE.Color(0x87CEEB); // Sky blue
+        this.scene.background = new THREE.Color(0x101010); // Darker neutral start
         
         // Camera
         this.camera = new THREE.PerspectiveCamera(
@@ -32,8 +39,14 @@ export class SceneManager {
         this.renderer = new THREE.WebGLRenderer({ antialias: true });
         this.renderer.setSize(container.clientWidth, container.clientHeight);
         this.renderer.shadowMap.enabled = true;
+        this.renderer.outputColorSpace = THREE.SRGBColorSpace;
+        this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        this.renderer.toneMappingExposure = 1.1;
         this.renderer.domElement.style.cursor = 'crosshair';
         container.appendChild(this.renderer.domElement);
+
+        // Asset loader (Draco/KTX2 ready)
+        this.assetLoader = new AssetLoader(this.renderer);
         
         // Initialize WebXR
         this.webXRManager = new WebXRManager(this.renderer, this.camera, this.scene);
@@ -42,19 +55,25 @@ export class SceneManager {
                 console.log('WebXR initialized');
             }
         });
+
+        // Environment lighting (HDRI)
+        this.loadEnvironmentHDR();
         
         // Lighting
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-        this.scene.add(ambientLight);
+        this.ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+        this.scene.add(this.ambientLight);
         
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-        directionalLight.position.set(5, 10, 5);
-        directionalLight.castShadow = true;
-        this.scene.add(directionalLight);
+        this.keyLight = new THREE.DirectionalLight(0xffffff, 1.0);
+        this.keyLight.position.set(8, 12, 6);
+        this.keyLight.castShadow = true;
+        this.keyLight.shadow.mapSize.set(1024, 1024);
+        this.keyLight.shadow.camera.near = 0.5;
+        this.keyLight.shadow.camera.far = 50;
+        this.scene.add(this.keyLight);
         
         // Ground
         const groundGeometry = new THREE.PlaneGeometry(20, 20);
-        const groundMaterial = new THREE.MeshStandardMaterial({ color: 0x90EE90 });
+        const groundMaterial = new THREE.MeshStandardMaterial({ color: 0x6b6b6b });
         const ground = new THREE.Mesh(groundGeometry, groundMaterial);
         ground.name = 'ground';
         ground.rotation.x = -Math.PI / 2;
@@ -63,6 +82,10 @@ export class SceneManager {
         
         // Simple character placeholder (cube for now)
         this.createPlaceholderCharacter();
+
+        // Load a high-quality PBR sample (Damaged Helmet) to showcase reflections/shadows
+        this.loadHeroModel('https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/DamagedHelmet/glTF-Binary/DamagedHelmet.glb')
+            .catch(err => console.warn('Hero model failed to load', err));
         
         // Handle window resize
         window.addEventListener('resize', () => this.onWindowResize(container));
@@ -120,6 +143,44 @@ export class SceneManager {
         return this.character;
     }
     
+    public async loadCharacterFromURL(url: string): Promise<void> {
+        const loader = new GLTFLoader();
+        
+        return new Promise<void>((resolve, reject) => {
+            loader.load(
+                url,
+                (gltf: GLTF) => {
+                    // Remove old character
+                    if (this.character) {
+                        this.scene.remove(this.character);
+                    }
+                    
+                    // Add new character
+                    const newCharacter = gltf.scene as THREE.Group;
+                    if (newCharacter) {
+                        this.character = newCharacter;
+                        this.character.position.set(0, 0, 0);
+                        this.scene.add(this.character);
+                        
+                        // Enable shadows
+                        this.character.traverse((child: THREE.Object3D) => {
+                            if (child instanceof THREE.Mesh) {
+                                child.castShadow = true;
+                                child.receiveShadow = true;
+                            }
+                        });
+                    }
+                    
+                    resolve();
+                },
+                undefined,
+                (error: unknown) => {
+                    reject(error instanceof Error ? error : new Error(String(error)));
+                }
+            );
+        });
+    }
+    
     public getWebXRManager(): WebXRManager | null {
         return this.webXRManager;
     }
@@ -136,6 +197,29 @@ export class SceneManager {
         return this.camera;
     }
     
+    /**
+     * Toggle quality presets (default vs high-quality)
+     * High-quality: higher exposure, larger shadow map, brighter key light
+     * Default: balanced for perf
+     */
+    public setQualityPreset(mode: 'default' | 'high') {
+        this.qualityMode = mode;
+        
+        if (mode === 'high') {
+            this.renderer.toneMappingExposure = 1.3;
+            this.renderer.shadowMap.enabled = true;
+            this.keyLight.intensity = 1.2;
+            this.keyLight.shadow.mapSize.set(2048, 2048);
+            this.ambientLight.intensity = 0.5;
+        } else {
+            this.renderer.toneMappingExposure = 1.1;
+            this.renderer.shadowMap.enabled = true;
+            this.keyLight.intensity = 1.0;
+            this.keyLight.shadow.mapSize.set(1024, 1024);
+            this.ambientLight.intensity = 0.4;
+        }
+    }
+    
     // Method to update scene based on configuration
     public updateSceneConfig(config: SceneConfig): void {
         // Update background color
@@ -149,6 +233,60 @@ export class SceneManager {
             (ground as THREE.Mesh).material = new THREE.MeshStandardMaterial({ 
                 color: config.groundColor 
             });
+        }
+    }
+
+    /**
+     * Load a hero PBR model to demonstrate reflections and shadows
+     */
+    public async loadHeroModel(url: string): Promise<void> {
+        const loader = new GLTFLoader();
+        return new Promise<void>((resolve, reject) => {
+            loader.load(
+                url,
+                (gltf: GLTF) => {
+                    // Remove old character/placeholder
+                    if (this.character) {
+                        this.scene.remove(this.character);
+                    }
+                    const hero = gltf.scene as THREE.Group;
+                    hero.position.set(0, 0, 0);
+                    hero.scale.set(2.2, 2.2, 2.2);
+                    // Enable shadows
+                    hero.traverse((child: THREE.Object3D) => {
+                        if (child instanceof THREE.Mesh) {
+                            child.castShadow = true;
+                            child.receiveShadow = true;
+                            if (child.material) {
+                                const mat = child.material as THREE.MeshStandardMaterial;
+                                mat.needsUpdate = true;
+                            }
+                        }
+                    });
+                    this.scene.add(hero);
+                    this.character = hero;
+                    resolve();
+                },
+                undefined,
+                (error: unknown) => reject(error instanceof Error ? error : new Error(String(error)))
+            );
+        });
+    }
+
+    private async loadEnvironmentHDR() {
+        // Lightweight studio HDRI for realistic lighting; replace with higher-res as needed
+        const hdrUrl = 'https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/2k/studio_small_09_2k.hdr';
+        const pmremGenerator = new THREE.PMREMGenerator(this.renderer);
+        pmremGenerator.compileEquirectangularShader();
+
+        try {
+            const hdrEquirect = await new RGBELoader().loadAsync(hdrUrl);
+            const envMap = pmremGenerator.fromEquirectangular(hdrEquirect).texture;
+            this.scene.environment = envMap;
+            hdrEquirect.dispose();
+            pmremGenerator.dispose();
+        } catch (err) {
+            console.warn('Failed to load HDR environment', err);
         }
     }
 }

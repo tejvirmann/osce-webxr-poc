@@ -51,5 +51,47 @@ export class APIClient {
         
         return await response.json();
     }
+    
+    async generateAsset(config: { prompt: string; generation_type?: string }): Promise<any> {
+        const response = await fetch(`${this.baseUrl}/api/generate`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(config),
+        });
+        
+        if (!response.ok) {
+            throw new Error(`API error: ${response.statusText}`);
+        }
+        
+        return await response.json();
+    }
+    
+    async getGenerationStatus(taskId: string): Promise<any> {
+        const response = await fetch(`${this.baseUrl}/api/generate/status/${taskId}`);
+        
+        if (!response.ok) {
+            throw new Error(`API error: ${response.statusText}`);
+        }
+        
+        return await response.json();
+    }
+    
+    async refineAndRegenerate(config: { task_id: string; feedback: string; original_prompt: string }): Promise<any> {
+        const response = await fetch(`${this.baseUrl}/api/generate/refine`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(config),
+        });
+        
+        if (!response.ok) {
+            throw new Error(`API error: ${response.statusText}`);
+        }
+        
+        return await response.json();
+    }
 }
 

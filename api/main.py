@@ -10,6 +10,8 @@ from typing import Optional, Dict
 import os
 from dotenv import load_dotenv
 from langgraph_agent import process_message
+from generation_agent import process_generation_request
+from generation_api import generation_api
 
 # Load environment variables
 load_dotenv()
@@ -37,6 +39,16 @@ class ChatResponse(BaseModel):
 class CharacterConfigRequest(BaseModel):
     prompt: Optional[str] = ""
     rules: Optional[str] = ""
+
+class GenerationRequest(BaseModel):
+    prompt: str
+    feedback: Optional[str] = ""
+    generation_type: Optional[str] = "character"  # "character" or "scene"
+
+class GenerationFeedbackRequest(BaseModel):
+    task_id: str
+    feedback: str
+    original_prompt: str
 
 # Character state and configuration
 character_state = {
@@ -136,6 +148,79 @@ async def update_character_config(request: CharacterConfigRequest):
 async def get_character_config():
     """Get current character configuration"""
     return character_config
+
+@app.post("/api/generate")
+async def generate_asset(request: GenerationRequest):
+    """
+    Generate 3D character or scene from prompt
+    Uses LangGraph agent to refine prompt based on feedback
+    """
+    try:
+        if not os.getenv("OPENAI_API_KEY"):
+            raise HTTPException(status_code=400, detail="OPENAI_API_KEY not configured")
+        
+        # Process through generation agent (refines prompt if feedback provided)
+        result = process_generation_request(
+            original_prompt=request.prompt,
+            feedback=request.feedback or "",
+            generation_type=request.generation_type
+        )
+        
+        return {
+            "status": "processing",
+            "task_id": result["task_id"],
+            "refined_prompt": result["refined_prompt"],
+            "message": "Generation started. Use /api/generate/status/{task_id} to check progress."
+        }
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/generate/refine")
+async def refine_and_regenerate(request: GenerationFeedbackRequest):
+    """
+    Provide feedback on generated asset and regenerate with improved prompt
+    """
+    try:
+        if not os.getenv("OPENAI_API_KEY"):
+            raise HTTPException(status_code=400, detail="OPENAI_API_KEY not configured")
+        
+        # Process feedback through generation agent
+        result = process_generation_request(
+            original_prompt=request.original_prompt,
+            feedback=request.feedback,
+            generation_type="character"  # Could be determined from task_id
+        )
+        
+        return {
+            "status": "processing",
+            "task_id": result["task_id"],
+            "refined_prompt": result["refined_prompt"],
+            "message": f"Regenerating with improved prompt based on feedback: '{request.feedback}'"
+        }
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/generate/status/{task_id}")
+async def get_generation_status(task_id: str):
+    """Check status of generation task"""
+    try:
+        if not generation_api:
+            raise HTTPException(status_code=400, detail="MESHY_API_KEY not configured")
+        
+        status = generation_api.check_generation_status(task_id)
+        model_url = generation_api.get_model_url(task_id) if status.get("status") == "SUCCEEDED" else None
+        
+        return {
+            "task_id": task_id,
+            "status": status.get("status"),
+            "model_url": model_url,
+            "progress": status.get("progress", 0)
+        }
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 # For Vercel serverless functions
 # Vercel will automatically detect Python files in /api folder

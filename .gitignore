@@ -40,3 +40,12 @@ yarn-debug.log*
 yarn-error.log*
 logs/
 .dev.pid
+
+# Large/binary assets (keep remote or use LFS)
+assets/
+*.glb
+*.gltf
+*.hdr
+*.ktx2
+logs/
+.dev.pid

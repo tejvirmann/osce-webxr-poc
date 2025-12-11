@@ -6,4 +6,6 @@ langchain-openai==0.0.5
 langchain-core==0.1.23
 langgraph==0.0.20
 pydantic==2.5.3
+requests==2.31.0
+requests==2.31.0
 

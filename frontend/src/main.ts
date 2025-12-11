@@ -13,6 +13,30 @@ const sceneManager = new SceneManager(container);
 const apiClient = new APIClient();
 const configPanel = new ConfigPanel(sceneManager, apiClient);
 
+// Quality toggle button
+const qualityButton = document.createElement('button');
+qualityButton.textContent = '🌗 High Quality';
+qualityButton.style.cssText = `
+    position: absolute;
+    top: 20px;
+    right: 200px;
+    z-index: 200;
+    padding: 10px 15px;
+    background: #607D8B;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+`;
+let qualityMode: 'default' | 'high' = 'default';
+qualityButton.addEventListener('click', () => {
+    qualityMode = qualityMode === 'default' ? 'high' : 'default';
+    sceneManager.setQualityPreset(qualityMode);
+    qualityButton.textContent = qualityMode === 'high' ? '🌗 Default Quality' : '🌗 High Quality';
+});
+document.body.appendChild(qualityButton);
+
 // Add VR button
 const webXRManager = sceneManager.getWebXRManager();
 if (webXRManager) {
