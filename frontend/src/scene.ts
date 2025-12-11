@@ -1,11 +1,13 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { CameraController } from './camera-controller.js';
 
 export class SceneManager {
     private scene: THREE.Scene;
     private camera: THREE.PerspectiveCamera;
     private renderer: THREE.WebGLRenderer;
     private character: THREE.Group | null = null;
+    private cameraController: CameraController | null = null;
     
     constructor(container: HTMLElement) {
         // Scene setup
@@ -21,10 +23,14 @@ export class SceneManager {
         );
         this.camera.position.set(0, 1.6, 3);
         
+        // Camera controller (for movement)
+        this.cameraController = new CameraController(this.camera);
+        
         // Renderer
         this.renderer = new THREE.WebGLRenderer({ antialias: true });
         this.renderer.setSize(container.clientWidth, container.clientHeight);
         this.renderer.shadowMap.enabled = true;
+        this.renderer.domElement.style.cursor = 'crosshair';
         container.appendChild(this.renderer.domElement);
         
         // Lighting
@@ -86,6 +92,11 @@ export class SceneManager {
     }
     
     public update() {
+        // Update camera controller (handles movement)
+        if (this.cameraController) {
+            this.cameraController.update();
+        }
+        
         // Rotate character slowly (for visual feedback)
         if (this.character) {
             this.character.rotation.y += 0.005;
