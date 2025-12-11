@@ -1,0 +1,22 @@
+{
+  "name": "osce-webxr-poc",
+  "version": "0.1.0",
+  "description": "AI-driven WebXR 3D simulation platform for medical training",
+  "scripts": {
+    "start": "npm run dev",
+    "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
+    "dev:frontend": "cd frontend && npx http-server -p 3000 -c-1 --cors",
+    "dev:backend": "cd api && python3.11 -m uvicorn main:app --reload --port 8000",
+    "build": "cd frontend && npm run build",
+    "build:frontend": "cd frontend && tsc"
+  },
+  "keywords": ["webxr", "threejs", "ai", "medical-training"],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "http-server": "^14.1.1",
+    "typescript": "^5.3.3"
+  }
+}
+

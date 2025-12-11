@@ -52,6 +52,55 @@ Build a **web-based, AI-driven 3D simulation platform** that allows users to:
 | **WebXR** | VR/AR web standard | Native browser support for VR/AR headsets; hand tracking, face tracking (via MediaPipe/TensorFlow.js), eye tracking | Enables Quest/Pico/phone AR support; **Can handle face/voice/body tracking** via Web APIs |
 | **MediaPipe / TensorFlow.js** | Face/pose/voice analysis | Real-time face detection, emotion recognition, voice sentiment analysis, body pose estimation | Runs in browser; provides objective measures (nervousness, confidence, etc.) to LangGraph |
 
+### Hugging Face AI Tools for Voice, Face, and Animation
+
+#### **Voice Processing**
+
+| Tool | Function | Capabilities | Integration |
+|------|----------|--------------|-------------|
+| **Whisper** (OpenAI) | Voice → Text (STT) | High-accuracy transcription, multi-language, punctuation | Use via Hugging Face Transformers or OpenAI API |
+| **SpeechT5** | Text → Voice (TTS) | Unified TTS/ASR, natural-sounding speech, voice cloning | Hugging Face Transformers, runs in browser via TensorFlow.js |
+| **VITS** | Text → Voice (TTS) | High-quality TTS, prosody control, zero-shot voice cloning | Hugging Face Transformers |
+| **SpeechBrain** | Voice Emotion Detection | Detects anger, sadness, nervousness, confidence from audio | Hugging Face Transformers, can run in browser |
+| **EmoNet-Voice** | Fine-grained Emotion Detection | 40 emotion categories with varying intensities | Hugging Face Transformers |
+
+#### **Facial Feature Tracking**
+
+| Tool | Function | Capabilities | Integration |
+|------|----------|--------------|-------------|
+| **MediaPipe Face Mesh** | Face Landmark Detection | 468 facial landmarks, real-time, runs in browser | TensorFlow.js, direct browser integration |
+| **UniFLG** (Unified Facial Landmark Generator) | Facial Landmarks from Text/Speech | Generates facial landmarks from text or speech inputs | Hugging Face Transformers |
+| **Takin-ADA** | Audio-Driven Facial Animation | Real-time facial animation synchronized with speech, lip-sync | Hugging Face Transformers, can generate facial expressions |
+| **TensorFlow.js Face Landmarks** | Face Expression Detection | Emotion recognition, facial expression analysis | Runs directly in browser |
+
+#### **Generative Animation & Rigging**
+
+| Tool | Function | Capabilities | Integration |
+|------|----------|--------------|-------------|
+| **TANGO** | Text-to-Body Gesture Generation | Generates co-speech body gestures from text, high-fidelity animations | Hugging Face Transformers, generates motion sequences |
+| **MotionGPT / Text-to-Motion** | Text-to-Human Motion | Converts text prompts to human motion sequences (backflips, crying, etc.) | Hugging Face Transformers, outputs motion data |
+| **SMPL / SMPL-X** | 3D Human Body Model | Parametric body model, can be driven by motion data | Use with motion generation models |
+| **PantoMatrix / Mootion** | Generative Body Animation | Real-time body movement control from prompts | Commercial API or open-source alternatives |
+
+**Key Insight**: For **generative rigging** (no manual animation), you can:
+1. Use **TANGO** or **MotionGPT** to generate motion sequences from text prompts
+2. Apply motion data to rigged character (SMPL or standard rig)
+3. Character performs actions like "backflip", "cry", "clench fist" based on prompt rules
+4. No manual keyframe animation needed—all driven by LLM + motion generation models
+
+**Example Workflow**:
+```
+LangGraph receives: "Doctor says 'please' AND shows nervousness"
+    ↓
+LLM generates: "Patient should do backflip, clench fist, sit in chair"
+    ↓
+MotionGPT/TANGO generates motion sequence from text
+    ↓
+Motion data applied to rigged character in Three.js
+    ↓
+Character performs actions in real-time
+```
+
 ---
 
 ## 🔄 Bidirectional Interaction System
@@ -324,14 +373,210 @@ Loop continues...
 
 ---
 
-## 📝 Next Steps
+## 🚀 Getting Started: Tech Stack & First Steps
 
-1. **Choose Core Framework**: XR Blocks vs. vanilla Three.js + WebXR
-2. **Set Up Development Environment**: Node.js, build tools, WebXR polyfills
-3. **Prototype Basic Scene**: Load a simple GLB character, basic WebXR setup
-4. **Integrate First LLM**: Simple OpenAI API call for character dialogue
-5. **Add First Interaction**: Mouse/touch trigger → LLM response
-6. **Iterate**: Add voice, animations, scene generation
+### Recommended Tech Stack (Start Here)
+
+#### **Frontend (WebXR 3D Scene)**
+| Component | Technology | Why |
+|-----------|------------|-----|
+| **3D Engine** | Three.js | Industry standard, massive ecosystem, WebXR support |
+| **WebXR** | @webxr-input-profiles | Hand tracking, VR/AR support |
+| **Build Tool** | Vite | Fast dev server, easy setup, modern tooling |
+| **TypeScript** | TypeScript | Type safety, better DX |
+
+#### **AI/ML Services**
+| Component | Technology | Why |
+|-----------|------------|-----|
+| **Voice → Text** | OpenAI Whisper (via API or Hugging Face) | Best accuracy, multi-language |
+| **Text → Voice** | OpenAI TTS API or SpeechT5 (Hugging Face) | Natural sounding, fast |
+| **Voice Emotion** | SpeechBrain (Hugging Face) or OpenAI Realtime API | Detects anger, sadness, nervousness |
+| **Face Tracking** | MediaPipe Face Mesh (TensorFlow.js) | Runs in browser, 468 landmarks |
+| **LLM Orchestration** | LangGraph (Python backend) | Stateful, manages complex flows |
+| **LLM** | OpenAI GPT-4o or Anthropic Claude | Best for character dialogue/behavior |
+
+#### **Backend (LangGraph Orchestrator)**
+| Component | Technology | Why |
+|-----------|------------|-----|
+| **Orchestration** | LangGraph (Python) | State machine for cue tracking |
+| **API Server** | FastAPI (Python) | Fast, async, WebSocket support |
+| **WebSocket** | FastAPI WebSockets | Real-time communication with frontend |
+
+#### **3D Assets (Later)**
+| Component | Technology | Why |
+|-----------|------------|-----|
+| **Scene Generation** | World Labs Marble API or WorldGen | Text → 3D scenes |
+| **Character Generation** | Meshy AI or Meta SAM 3D | Text/image → rigged 3D characters |
+| **Animation** | PantoMatrix/Mootion or NVIDIA ACE | Generative body/facial animation |
+
+### Step-by-Step: Where to Start
+
+#### **Phase 0: Minimal Viable Prototype (Week 1-2)**
+
+**Goal**: Get a basic 3D scene with one character that responds to text input.
+
+**1. Set Up Frontend Project**
+```bash
+# Create new project
+npm create vite@latest osce-webxr -- --template vanilla-ts
+cd osce-webxr
+npm install
+
+# Install core dependencies
+npm install three @types/three
+npm install @webxr-input-profiles/motion-controllers
+```
+
+**2. Create Basic Three.js Scene**
+- Set up a simple scene with a camera, renderer, lighting
+- Load a basic GLB character (download from Mixamo or use a simple model)
+- Add basic WebXR support (desktop first, VR later)
+
+**3. Set Up Backend (LangGraph)**
+```bash
+# Create Python backend
+mkdir backend
+cd backend
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+pip install langgraph langchain-openai fastapi uvicorn websockets
+```
+
+**4. Create Minimal LangGraph Agent**
+- Simple state graph that receives cues
+- Routes to LLM (OpenAI API) for character responses
+- Returns text response to frontend
+
+**5. Connect Frontend ↔ Backend**
+- Frontend sends text input (simulate doctor speaking)
+- Backend LangGraph processes → LLM generates patient response
+- Frontend displays response (text bubble for now)
+
+**Result**: You have a 3D character that responds to text input via LLM orchestration.
+
+---
+
+#### **Phase 1: Add Voice (Week 3-4)**
+
+**1. Add Voice Input (STT)**
+```bash
+# Frontend: Add OpenAI Whisper or use browser SpeechRecognition API
+npm install @tensorflow/tfjs @tensorflow-models/speech-commands
+```
+
+**2. Add Voice Output (TTS)**
+- Use OpenAI TTS API or browser SpeechSynthesis API
+- Play audio when character responds
+
+**3. Update LangGraph**
+- Receive transcribed speech
+- Process through LLM
+- Return text + emotion tags
+
+**Result**: Voice conversation with 3D character.
+
+---
+
+#### **Phase 2: Add Cue Tracking (Week 5-6)**
+
+**1. Add Face Tracking**
+```bash
+npm install @mediapipe/face_mesh @tensorflow/tfjs
+```
+- Detect facial expressions in real-time
+- Send emotion scores to LangGraph
+
+**2. Add Voice Emotion Detection**
+- Use SpeechBrain (Hugging Face) or analyze voice features
+- Detect nervousness, anger, sadness
+- Send to LangGraph
+
+**3. Update LangGraph State Graph**
+- Track all cues (face, voice, timing)
+- Route to character agent based on prompt rules
+- Maintain character state
+
+**Result**: Character reacts to your face and voice tone.
+
+---
+
+#### **Phase 3: Add Complex Interactions (Week 7-8)**
+
+**1. Add WebXR Hand Tracking**
+- Detect hand position, gestures
+- Detect touch/proximity to character
+- Send to LangGraph
+
+**2. Add Generative Animation**
+- Research text-to-motion models (TANGO, MotionGPT)
+- Or use pre-built animation library (Mixamo animations)
+- Map LLM output to animations
+
+**3. Update Character Prompts**
+- Define complex reaction rules
+- Example: "If doctor says 'please' AND shows nervousness → do backflip and clench fist"
+
+**Result**: Character performs complex actions based on prompt rules.
+
+---
+
+### Quick Start Commands
+
+**Frontend Setup:**
+```bash
+npm create vite@latest osce-webxr -- --template vanilla-ts
+cd osce-webxr
+npm install three @types/three @webxr-input-profiles/motion-controllers
+npm install @mediapipe/face_mesh @tensorflow/tfjs
+npm run dev
+```
+
+**Backend Setup:**
+```bash
+mkdir backend && cd backend
+python -m venv venv
+source venv/bin/activate
+pip install langgraph langchain-openai fastapi uvicorn websockets python-dotenv
+```
+
+**Environment Variables (.env):**
+```
+OPENAI_API_KEY=your_key_here
+```
+
+### Recommended Learning Path
+
+1. **Week 1**: Three.js basics + WebXR setup
+2. **Week 2**: LangGraph basics + simple LLM agent
+3. **Week 3**: Voice input/output integration
+4. **Week 4**: Face tracking with MediaPipe
+5. **Week 5**: Voice emotion detection
+6. **Week 6**: LangGraph state management
+7. **Week 7**: WebXR hand tracking
+8. **Week 8**: Animation system
+
+### Key Files to Create First
+
+**Frontend:**
+- `src/main.ts` - Three.js scene setup
+- `src/character.ts` - Character loading/rendering
+- `src/langgraph-client.ts` - WebSocket connection to backend
+- `src/face-tracker.ts` - MediaPipe face tracking
+- `src/voice-handler.ts` - STT/TTS
+
+**Backend:**
+- `main.py` - FastAPI server
+- `langgraph_agent.py` - LangGraph state graph
+- `character_prompts.py` - Character behavior definitions
+- `cue_tracker.py` - Processes face/voice/body cues
+
+### Next Steps After MVP
+
+1. **Add scene generation** (World Labs Marble API)
+2. **Add character generation** (Meshy AI)
+3. **Add generative animation** (text-to-motion models)
+4. **Optimize for VR** (Quest 3 testing)
+5. **Add RAG** (medical knowledge base)
 
 ---
 

@@ -15,4 +15,121 @@ AI-driven interactive 3D scenes for medical training (OSCE scenarios) using:
 - **Voice interactions** (OpenAI Realtime API)
 - **Natural animations** (NVIDIA ACE, PantoMatrix/Mootion)
 
-All running in the browser—no app installation required. 
+All running in the browser—no app installation required.
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+- Node.js 18+ and npm
+- Python 3.11+
+- OpenAI API key (for LLM features)
+
+### Installation
+
+1. **Clone and install dependencies:**
+
+```bash
+# Install frontend dependencies
+cd frontend
+npm install
+
+# Install backend dependencies
+cd ../api
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+pip install -r requirements.txt
+```
+
+2. **Set up environment variables:**
+
+Create `.env` file in the root:
+```
+OPENAI_API_KEY=your_key_here
+```
+
+3. **Start development servers:**
+
+From the root directory:
+```bash
+npm start
+```
+
+This will start:
+- Frontend on `http://localhost:3000`
+- Backend API on `http://localhost:8000`
+
+Or run separately:
+```bash
+# Frontend only
+npm run dev:frontend
+
+# Backend only
+npm run dev:backend
+```
+
+## 📁 Project Structure
+
+```
+osce-webxr-poc/
+├── frontend/          # Frontend (Three.js + WebXR)
+│   ├── src/
+│   │   ├── main.ts   # Entry point
+│   │   ├── scene.ts  # Three.js scene management
+│   │   └── api.ts    # API client
+│   ├── index.html
+│   └── package.json
+├── api/               # Backend (FastAPI + LangGraph)
+│   ├── main.py       # FastAPI server
+│   └── requirements.txt
+├── vercel.json       # Vercel deployment config
+└── package.json      # Root package.json
+```
+
+## 🚢 Deployment
+
+### Deploy to Vercel
+
+1. **Install Vercel CLI:**
+```bash
+npm i -g vercel
+```
+
+2. **Deploy:**
+```bash
+vercel
+```
+
+Vercel will automatically:
+- Deploy frontend from `/frontend`
+- Deploy backend API from `/api` as serverless functions
+
+3. **Set environment variables in Vercel dashboard:**
+- `OPENAI_API_KEY`
+
+## 🎯 Current Status: v0
+
+**Phase 0 - Minimal Viable Prototype:**
+- ✅ Basic Three.js scene
+- ✅ Simple character placeholder
+- ✅ HTTP API endpoint
+- ✅ Basic chat interface
+- ⏳ LangGraph integration (Phase 1)
+- ⏳ Voice input/output (Phase 1)
+- ⏳ Face tracking (Phase 2)
+- ⏳ WebXR support (Phase 1)
+
+## 📝 Development Roadmap
+
+See [VISION.md](./VISION.md) for detailed roadmap.
+
+## 🔧 Tech Stack
+
+- **Frontend**: TypeScript, Three.js, WebXR
+- **Backend**: Python, FastAPI, LangGraph
+- **Deployment**: Vercel (serverless)
+- **AI**: OpenAI GPT-4o, LangChain
+
+## 📄 License
+
+MIT
