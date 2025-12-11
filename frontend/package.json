@@ -1,0 +1,19 @@
+{
+  "name": "osce-webxr-frontend",
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "dev": "npx http-server -p 3000 -c-1 --cors",
+    "start": "npx http-server -p 3000 -c-1 --cors"
+  },
+  "dependencies": {
+    "three": "^0.160.0"
+  },
+  "devDependencies": {
+    "@types/three": "^0.160.0",
+    "typescript": "^5.3.3",
+    "http-server": "^14.1.1"
+  }
+}
+
