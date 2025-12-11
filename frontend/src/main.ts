@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { SceneManager } from './scene.js';
 import { APIClient } from './api.js';
+import { ConfigPanel } from './config-panel.js';
 
 // Initialize scene
 const container = document.getElementById('canvas-container');
@@ -10,6 +11,31 @@ if (!container) {
 
 const sceneManager = new SceneManager(container);
 const apiClient = new APIClient();
+const configPanel = new ConfigPanel(sceneManager, apiClient);
+
+// Add VR button
+const webXRManager = sceneManager.getWebXRManager();
+if (webXRManager) {
+    const vrButton = document.createElement('button');
+    vrButton.textContent = '🥽 Enter VR';
+    vrButton.style.cssText = `
+        position: absolute;
+        top: 20px;
+        right: 100px;
+        z-index: 200;
+        padding: 10px 15px;
+        background: #9C27B0;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 14px;
+    `;
+    vrButton.addEventListener('click', () => {
+        webXRManager.enterVR();
+    });
+    document.body.appendChild(vrButton);
+}
 
 // UI elements
 const userInput = document.getElementById('user-input') as HTMLInputElement;

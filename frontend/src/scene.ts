@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { CameraController } from './camera-controller.js';
+import { WebXRManager } from './webxr-manager.js';
 
 export class SceneManager {
     private scene: THREE.Scene;
@@ -8,6 +9,7 @@ export class SceneManager {
     private renderer: THREE.WebGLRenderer;
     private character: THREE.Group | null = null;
     private cameraController: CameraController | null = null;
+    private webXRManager: WebXRManager | null = null;
     
     constructor(container: HTMLElement) {
         // Scene setup
@@ -33,6 +35,14 @@ export class SceneManager {
         this.renderer.domElement.style.cursor = 'crosshair';
         container.appendChild(this.renderer.domElement);
         
+        // Initialize WebXR
+        this.webXRManager = new WebXRManager(this.renderer, this.camera, this.scene);
+        this.webXRManager.initWebXR().then(supported => {
+            if (supported) {
+                console.log('WebXR initialized');
+            }
+        });
+        
         // Lighting
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
         this.scene.add(ambientLight);
@@ -46,6 +56,7 @@ export class SceneManager {
         const groundGeometry = new THREE.PlaneGeometry(20, 20);
         const groundMaterial = new THREE.MeshStandardMaterial({ color: 0x90EE90 });
         const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+        ground.name = 'ground';
         ground.rotation.x = -Math.PI / 2;
         ground.receiveShadow = true;
         this.scene.add(ground);
@@ -108,5 +119,43 @@ export class SceneManager {
     public getCharacter(): THREE.Group | null {
         return this.character;
     }
+    
+    public getWebXRManager(): WebXRManager | null {
+        return this.webXRManager;
+    }
+    
+    public getRenderer(): THREE.WebGLRenderer {
+        return this.renderer;
+    }
+    
+    public getScene(): THREE.Scene {
+        return this.scene;
+    }
+    
+    public getCamera(): THREE.PerspectiveCamera {
+        return this.camera;
+    }
+    
+    // Method to update scene based on configuration
+    public updateSceneConfig(config: SceneConfig): void {
+        // Update background color
+        if (config.backgroundColor) {
+            this.scene.background = new THREE.Color(config.backgroundColor);
+        }
+        
+        // Update ground color
+        const ground = this.scene.getObjectByName('ground');
+        if (ground && config.groundColor) {
+            (ground as THREE.Mesh).material = new THREE.MeshStandardMaterial({ 
+                color: config.groundColor 
+            });
+        }
+    }
+}
+
+export interface SceneConfig {
+    backgroundColor?: string;
+    groundColor?: string;
+    characterPrompt?: string;
 }
 

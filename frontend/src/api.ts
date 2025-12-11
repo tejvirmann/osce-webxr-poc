@@ -35,5 +35,21 @@ export class APIClient {
         
         return await response.json();
     }
+    
+    async updateCharacterConfig(config: { prompt?: string; rules?: string }): Promise<any> {
+        const response = await fetch(`${this.baseUrl}/api/config`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(config),
+        });
+        
+        if (!response.ok) {
+            throw new Error(`API error: ${response.statusText}`);
+        }
+        
+        return await response.json();
+    }
 }
 
