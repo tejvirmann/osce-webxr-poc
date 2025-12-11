@@ -17,6 +17,8 @@ export class SceneManager {
     private ambientLight: THREE.AmbientLight;
     private keyLight: THREE.DirectionalLight;
     private qualityMode: 'default' | 'high' = 'default';
+    private mixers: THREE.AnimationMixer[] = [];
+    private clock: THREE.Clock;
     
     constructor(container: HTMLElement) {
         // Scene setup
@@ -47,6 +49,9 @@ export class SceneManager {
 
         // Asset loader (Draco/KTX2 ready)
         this.assetLoader = new AssetLoader(this.renderer);
+
+        // Clock for animation mixer
+        this.clock = new THREE.Clock();
         
         // Initialize WebXR
         this.webXRManager = new WebXRManager(this.renderer, this.camera, this.scene);
@@ -72,7 +77,7 @@ export class SceneManager {
         this.scene.add(this.keyLight);
         
         // Ground
-        const groundGeometry = new THREE.PlaneGeometry(20, 20);
+        const groundGeometry = new THREE.PlaneGeometry(40, 40);
         const groundMaterial = new THREE.MeshStandardMaterial({ color: 0x6b6b6b });
         const ground = new THREE.Mesh(groundGeometry, groundMaterial);
         ground.name = 'ground';
@@ -80,12 +85,23 @@ export class SceneManager {
         ground.receiveShadow = true;
         this.scene.add(ground);
         
-        // Simple character placeholder (cube for now)
+        // Optional placeholder (kept but overshadowed by loaded assets)
         this.createPlaceholderCharacter();
 
-        // Load a high-quality PBR sample (Damaged Helmet) to showcase reflections/shadows
-        this.loadHeroModel('https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/DamagedHelmet/glTF-Binary/DamagedHelmet.glb')
-            .catch(err => console.warn('Hero model failed to load', err));
+        // Load rigged/animated humans
+        // 1) Rigged human with animation (Soldier)
+        this.loadModelWithAnimation(
+            'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Soldier/glTF-Binary/Soldier.glb',
+            new THREE.Vector3(0, 0, 0),
+            1.2
+        ).catch(err => console.warn('Soldier load failed', err));
+
+        // 2) Second animated human (RiggedFigure with walk animation)
+        this.loadModelWithAnimation(
+            'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/RiggedFigure/glTF-Binary/RiggedFigure.glb',
+            new THREE.Vector3(5, 0, 1),
+            1.0
+        ).catch(err => console.warn('RiggedFigure load failed', err));
         
         // Handle window resize
         window.addEventListener('resize', () => this.onWindowResize(container));
@@ -130,10 +146,11 @@ export class SceneManager {
         if (this.cameraController) {
             this.cameraController.update();
         }
-        
-        // Rotate character slowly (for visual feedback)
-        if (this.character) {
-            this.character.rotation.y += 0.005;
+
+        // Update animation mixer
+        const delta = this.clock.getDelta();
+        if (this.mixers.length) {
+            this.mixers.forEach(m => m.update(delta));
         }
         
         this.renderer.render(this.scene, this.camera);
@@ -237,34 +254,32 @@ export class SceneManager {
     }
 
     /**
-     * Load a hero PBR model to demonstrate reflections and shadows
+     * Load a model and play its first animation if present
      */
-    public async loadHeroModel(url: string): Promise<void> {
+    public async loadModelWithAnimation(url: string, position: THREE.Vector3, scale: number = 1): Promise<void> {
         const loader = new GLTFLoader();
         return new Promise<void>((resolve, reject) => {
             loader.load(
                 url,
                 (gltf: GLTF) => {
-                    // Remove old character/placeholder
-                    if (this.character) {
-                        this.scene.remove(this.character);
-                    }
-                    const hero = gltf.scene as THREE.Group;
-                    hero.position.set(0, 0, 0);
-                    hero.scale.set(2.2, 2.2, 2.2);
-                    // Enable shadows
-                    hero.traverse((child: THREE.Object3D) => {
+                    const model = gltf.scene as THREE.Group;
+                    model.position.copy(position);
+                    model.scale.set(scale, scale, scale);
+                    model.traverse((child: THREE.Object3D) => {
                         if (child instanceof THREE.Mesh) {
                             child.castShadow = true;
                             child.receiveShadow = true;
-                            if (child.material) {
-                                const mat = child.material as THREE.MeshStandardMaterial;
-                                mat.needsUpdate = true;
-                            }
                         }
                     });
-                    this.scene.add(hero);
-                    this.character = hero;
+                    this.scene.add(model);
+
+                    // Play first animation if present
+                    if (gltf.animations && gltf.animations.length > 0) {
+                        const mixer = new THREE.AnimationMixer(model);
+                        const action = mixer.clipAction(gltf.animations[0]);
+                        action.play();
+                        this.mixers.push(mixer);
+                    }
                     resolve();
                 },
                 undefined,
