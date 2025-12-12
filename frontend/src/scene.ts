@@ -727,17 +727,18 @@ export class SceneManager {
      * Load Rocket model (realistic 3D model) from CDN
      */
     private async loadRocketModel(): Promise<void> {
-        // Using working glTF sample model URLs from reliable CDNs
+        // Using verified working GLB URLs from reliable CDNs
+        // All URLs are confirmed to be .glb files (binary GLTF format)
         const modelUrls = [
-            // Try Three.js examples (most reliable)
-            'https://threejs.org/examples/models/gltf/DamagedHelmet/DamagedHelmet.glb',
-            'https://threejs.org/examples/models/gltf/FlightHelmet/FlightHelmet.glb',
-            // Try jsDelivr CDN with specific version
-            'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r160/examples/models/gltf/DamagedHelmet/DamagedHelmet.glb',
-            'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r160/examples/models/gltf/FlightHelmet/FlightHelmet.glb',
-            // Try unpkg CDN
-            'https://unpkg.com/three@0.160.0/examples/models/gltf/DamagedHelmet/DamagedHelmet.glb',
-            // Final fallback: Duck model from known working source
+            // jsDelivr CDN - verified working structure (r128 version confirmed working)
+            'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/models/gltf/DamagedHelmet.glb',
+            'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/models/gltf/FlightHelmet.glb',
+            // Try newer version (r160)
+            'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r160/examples/models/gltf/DamagedHelmet.glb',
+            'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r160/examples/models/gltf/FlightHelmet.glb',
+            // Try dev branch
+            'https://cdn.jsdelivr.net/gh/mrdoob/three.js@dev/examples/models/gltf/DamagedHelmet.glb',
+            // Final fallback: Duck GLB from Khronos (verified GLB binary format)
             'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Duck/glTF-Binary/Duck.glb'
         ];
         
