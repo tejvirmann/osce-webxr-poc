@@ -21,12 +21,41 @@ class AgentState(TypedDict):
     character_state: dict
     user_message: str
 
-# Initialize LLM
-llm = ChatOpenAI(
-    model="gpt-4o-mini",  # Using mini for cost efficiency, can upgrade to gpt-4o
-    temperature=0.7,
-    api_key=os.getenv("OPENAI_API_KEY")
-)
+# Initialize LLM - use OpenRouter if available, otherwise OpenAI
+openrouter_key = os.getenv("OPENROUTER_API_KEY")
+openai_key = os.getenv("OPENAI_API_KEY")
+
+if openrouter_key:
+    # Use OpenRouter with Claude via OpenAI-compatible API
+    # OpenRouter uses OpenAI-compatible endpoints
+    try:
+        llm = ChatOpenAI(
+            model="anthropic/claude-3.5-sonnet",
+            temperature=0.7,
+            openai_api_key=openrouter_key,
+            openai_api_base="https://openrouter.ai/api/v1",
+            max_tokens=300,  # Reduced to work with limited credits
+            default_headers={
+                "HTTP-Referer": "https://osce-webxr-poc.vercel.app",
+                "X-Title": "OSCE WebXR Chat"
+            }
+        )
+        # Test the connection (will fail silently if key is invalid)
+        print("✅ OpenRouter LLM initialized")
+    except Exception as e:
+        print(f"⚠️  Failed to initialize OpenRouter LLM: {e}")
+        llm = None
+elif openai_key:
+    # Fallback to OpenAI if OpenRouter not available
+    llm = ChatOpenAI(
+        model="gpt-4o-mini",
+        temperature=0.7,
+        openai_api_key=openai_key
+    )
+else:
+    # No API key - will use fallback responses
+    llm = None
+    print("⚠️  No API keys found - using fallback responses")
 
 # Agent 1: Character Behavior Agent
 def character_agent(state: AgentState) -> AgentState:
@@ -60,16 +89,33 @@ Keep responses concise (1-2 sentences)."""
 
     from langchain_core.messages import SystemMessage, HumanMessage
     
-    messages = [
-        SystemMessage(content=system_prompt),
-        HumanMessage(content=user_message)
-    ]
+    response = None
+    if llm is None:
+        # Fallback response if no LLM available
+        character_response = "I'm listening, doctor. Please continue."
+        # Create a mock message for state tracking
+        from langchain_core.messages import AIMessage
+        response = AIMessage(content=character_response)
+    else:
+        try:
+            messages = [
+                SystemMessage(content=system_prompt),
+                HumanMessage(content=user_message)
+            ]
+            
+            response = llm.invoke(messages)
+            character_response = response.content
+        except Exception as e:
+            # If LLM call fails, use fallback
+            print(f"⚠️  LLM call failed: {e}")
+            character_response = f"I'm listening, doctor. (Note: AI response unavailable - {str(e)[:50]})"
+            # Create a mock message for state tracking
+            from langchain_core.messages import AIMessage
+            response = AIMessage(content=character_response)
     
-    response = llm.invoke(messages)
-    character_response = response.content
-    
-    # Update state
-    state["messages"] = state.get("messages", []) + [response]
+    # Update state (response is now guaranteed to be defined)
+    if response:
+        state["messages"] = state.get("messages", []) + [response]
     
     return state
 
@@ -139,7 +185,12 @@ def process_message(user_message: str, character_prompt: str = "", reaction_rule
     
     # Get the last message (character response)
     messages = result.get("messages", [])
-    character_response = messages[-1]["content"] if messages else "I'm listening, doctor."
+    if messages:
+        # Messages are AIMessage objects, access .content attribute
+        last_message = messages[-1]
+        character_response = last_message.content if hasattr(last_message, 'content') else str(last_message)
+    else:
+        character_response = "I'm listening, doctor."
     
     return {
         "message": character_response,

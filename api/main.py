@@ -12,6 +12,7 @@ from dotenv import load_dotenv
 from langgraph_agent import process_message
 from generation_agent import process_generation_request
 from generation_api import generation_api
+from animation_generator import animation_generator
 
 # Load environment variables
 load_dotenv()
@@ -50,6 +51,11 @@ class GenerationFeedbackRequest(BaseModel):
     feedback: str
     original_prompt: str
 
+class AnimationRequest(BaseModel):
+    bone_structure: list  # List of bone objects with name, parent, position, rotation
+    prompt: str  # Natural language description of animation
+    model: Optional[str] = "anthropic/claude-3.5-sonnet"
+
 # Character state and configuration
 character_state = {
     "anxiety_level": 5,
@@ -80,9 +86,14 @@ async def chat(request: ChatRequest):
     """
     Chat endpoint using LangGraph with 2 agents
     """
+    global character_state  # Declare global at the start of the function
+    
     try:
-        # Check if OpenAI API key is set
-        if not os.getenv("OPENAI_API_KEY"):
+        # Check if we have any API key (OpenRouter or OpenAI)
+        has_openrouter = bool(os.getenv("OPENROUTER_API_KEY"))
+        has_openai = bool(os.getenv("OPENAI_API_KEY"))
+        
+        if not has_openrouter and not has_openai:
             # Fallback to simple responses if no API key
             user_message = request.message.lower()
             if "hello" in user_message or "hi" in user_message:
@@ -98,7 +109,7 @@ async def chat(request: ChatRequest):
                 character_state=character_state
             )
         
-        # Use LangGraph agents
+        # Use LangGraph agents (will use OpenRouter if available, otherwise OpenAI)
         result = process_message(
             user_message=request.message,
             character_prompt=character_config.get("prompt", ""),
@@ -107,7 +118,6 @@ async def chat(request: ChatRequest):
         )
         
         # Update global character state
-        global character_state
         character_state.update(result.get("character_state", character_state))
         
         return ChatResponse(
@@ -217,6 +227,42 @@ async def get_generation_status(task_id: str):
             "status": status.get("status"),
             "model_url": model_url,
             "progress": status.get("progress", 0)
+        }
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/animation/generate")
+async def generate_animation(request: AnimationRequest):
+    """
+    Generate Three.js animation code from text prompt
+    Requires bone structure extracted from GLB model
+    """
+    try:
+        if not animation_generator:
+            raise HTTPException(status_code=400, detail="OPENROUTER_API_KEY not configured")
+        
+        # Format bone structure
+        bone_structure_str = animation_generator.extract_bone_structure(request.bone_structure)
+        
+        # Generate code
+        result = animation_generator.generate_animation_code(
+            bone_structure=bone_structure_str,
+            prompt=request.prompt,
+            model=request.model
+        )
+        
+        if not result["success"]:
+            raise HTTPException(status_code=500, detail=result.get("error", "Generation failed"))
+        
+        # Validate code
+        validation = animation_generator.validate_code(result["code"])
+        
+        return {
+            "code": result["code"],
+            "validation": validation,
+            "prompt": request.prompt,
+            "model": result["model"]
         }
     
     except Exception as e:

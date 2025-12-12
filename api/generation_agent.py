@@ -21,12 +21,33 @@ class GenerationState(TypedDict):
     task_id: Optional[str]
     model_url: Optional[str]
 
-# Initialize LLM for prompt refinement
-llm = ChatOpenAI(
-    model="gpt-4o-mini",
-    temperature=0.7,
-    api_key=os.getenv("OPENAI_API_KEY")
-)
+# Initialize LLM for prompt refinement - use OpenRouter if available, otherwise OpenAI
+openrouter_key = os.getenv("OPENROUTER_API_KEY")
+openai_key = os.getenv("OPENAI_API_KEY")
+
+if openrouter_key:
+    # Use OpenRouter with Claude via OpenAI-compatible API
+    llm = ChatOpenAI(
+        model="anthropic/claude-3.5-sonnet",
+        temperature=0.7,
+        openai_api_key=openrouter_key,
+        openai_api_base="https://openrouter.ai/api/v1",
+        max_tokens=300,  # Reduced to work with limited credits
+        default_headers={
+            "HTTP-Referer": "https://osce-webxr-poc.vercel.app",
+            "X-Title": "OSCE WebXR Generation"
+        }
+    )
+elif openai_key:
+    # Fallback to OpenAI if OpenRouter not available
+    llm = ChatOpenAI(
+        model="gpt-4o-mini",
+        temperature=0.7,
+        api_key=openai_key
+    )
+else:
+    # No API key - will use fallback responses
+    llm = None
 
 def refine_prompt_agent(state: GenerationState) -> GenerationState:
     """
@@ -58,13 +79,20 @@ The prompt should be:
 
 Return only the improved prompt, no explanation."""
 
-    from langchain_core.messages import SystemMessage, HumanMessage
-    response = llm.invoke([
-        SystemMessage(content="You are a prompt engineering expert for 3D generation."),
-        HumanMessage(content=refinement_prompt)
-    ])
-    
-    refined_prompt = response.content.strip()
+    if llm is None:
+        # Fallback: simple prompt improvement without LLM
+        if feedback:
+            refined_prompt = f"{current}. {feedback}"
+        else:
+            refined_prompt = original
+    else:
+        from langchain_core.messages import SystemMessage, HumanMessage
+        response = llm.invoke([
+            SystemMessage(content="You are a prompt engineering expert for 3D generation."),
+            HumanMessage(content=refinement_prompt)
+        ])
+        
+        refined_prompt = response.content.strip()
     state["current_prompt"] = refined_prompt
     
     # Add to history
