@@ -93,5 +93,25 @@ export class APIClient {
         
         return await response.json();
     }
+    
+    async generateAnimation(config: { 
+        bone_structure: any[]; 
+        prompt: string; 
+        model?: string 
+    }): Promise<any> {
+        const response = await fetch(`${this.baseUrl}/api/animation/generate`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(config),
+        });
+        
+        if (!response.ok) {
+            throw new Error(`API error: ${response.statusText}`);
+        }
+        
+        return await response.json();
+    }
 }
 

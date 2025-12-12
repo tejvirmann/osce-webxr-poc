@@ -2,6 +2,8 @@ import * as THREE from 'three';
 import { SceneManager } from './scene.js';
 import { APIClient } from './api.js';
 import { ConfigPanel } from './config-panel.js';
+import { AnimationGenerator } from './animation-generator.js';
+import { AnimationPanel } from './animation-panel.js';
 
 // Initialize scene
 const container = document.getElementById('canvas-container');
@@ -12,6 +14,11 @@ if (!container) {
 const sceneManager = new SceneManager(container);
 const apiClient = new APIClient();
 const configPanel = new ConfigPanel(sceneManager, apiClient);
+
+// Initialize animation generator and panel
+const animationGenerator = new AnimationGenerator(apiClient);
+sceneManager.setAnimationGenerator(animationGenerator);
+const animationPanel = new AnimationPanel(sceneManager, animationGenerator);
 
 // Quality toggle button
 const qualityButton = document.createElement('button');

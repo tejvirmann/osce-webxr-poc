@@ -32,7 +32,29 @@ install-frontend:
 
 install-backend:
 	@echo "Installing backend dependencies..."
-	cd api && python3.11 -m pip install -r requirements.txt
+	@if command -v python3.11 >/dev/null 2>&1; then \
+		echo "Using Python 3.11"; \
+		(cd api && if [ ! -d "venv" ]; then \
+			echo "Creating Python virtual environment..."; \
+			python3.11 -m venv venv; \
+		fi); \
+		(cd api && source venv/bin/activate && \
+			pip install --upgrade pip setuptools wheel && \
+			pip install -r requirements.txt); \
+	elif command -v python3 >/dev/null 2>&1; then \
+		echo "⚠️  Using python3 (Python 3.11 recommended)"; \
+		(cd api && if [ ! -d "venv" ]; then \
+			echo "Creating Python virtual environment..."; \
+			python3 -m venv venv; \
+		fi); \
+		(cd api && source venv/bin/activate && \
+			pip install --upgrade pip setuptools wheel && \
+			pip install -r requirements.txt); \
+	else \
+		echo "❌ Python not found!"; \
+		exit 1; \
+	fi
+	@echo "✅ Backend dependencies installed"
 
 # Build
 build:
@@ -57,7 +79,11 @@ dev-backend: stop-backend
 	@echo "Starting backend only..."
 	@echo "Backend: http://localhost:8000"
 	@echo "Press Ctrl+C to stop"
-	cd api && python3.11 -m uvicorn main:app --reload --port 8000
+	@if [ ! -d "api/venv" ]; then \
+		echo "⚠️  Virtual environment not found. Run 'make install-backend' first."; \
+		exit 1; \
+	fi
+	cd api && source venv/bin/activate && python3 -m uvicorn main:app --reload --port 8000
 
 # Start in background (using nohup)
 start: stop

@@ -4,9 +4,10 @@
   "description": "AI-driven WebXR 3D simulation platform for medical training",
   "scripts": {
     "start": "npm run dev",
-    "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
-    "dev:frontend": "cd frontend && npx http-server -p 3000 -c-1 --cors",
-    "dev:backend": "cd api && python3.11 -m uvicorn main:app --reload --port 8000",
+    "dev": "npm run copy-assets && concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
+    "dev:frontend": "cd frontend && npm run build && npx http-server -p 3000 -c-1 --cors",
+    "dev:backend": "cd api && source venv/bin/activate && python3 -m uvicorn main:app --reload --port 8000",
+    "copy-assets": "mkdir -p frontend/dist/assets && cp -f assets/*.glb frontend/dist/assets/ 2>/dev/null || true",
     "build": "cd frontend && npm run build",
     "build:frontend": "cd frontend && tsc"
   },

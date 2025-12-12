@@ -3,9 +3,12 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "build": "tsc",
-    "dev": "npx http-server -p 3000 -c-1 --cors",
-    "start": "npx http-server -p 3000 -c-1 --cors"
+    "build": "tsc && npm run copy-assets",
+    "copy-assets": "mkdir -p dist/assets && cp -r ../assets/*.glb dist/assets/ 2>/dev/null || true",
+    "dev": "npm run build && npm run copy-assets && npx http-server -p 3000 -c-1 --cors",
+    "start": "npm run build && npm run copy-assets && npx http-server -p 3000 -c-1 --cors",
+    "watch": "tsc --watch",
+    "dev:watch": "concurrently \"npm run watch\" \"npm run dev\""
   },
   "dependencies": {
     "three": "^0.160.0"
@@ -13,7 +16,8 @@
   "devDependencies": {
     "@types/three": "^0.160.0",
     "typescript": "^5.3.3",
-    "http-server": "^14.1.1"
+    "http-server": "^14.1.1",
+    "concurrently": "^8.2.2"
   }
 }
 

@@ -22,51 +22,65 @@ All running in the browser—no app installation required.
 ### Prerequisites
 
 - Node.js 18+ and npm
-- Python 3.11+
-- OpenAI API key (for LLM features)
+- Python 3.11+ (or Python 3.x)
+- OpenRouter API key (for chat and animations)
 
 ### Installation
 
-1. **Clone and install dependencies:**
+1. **Install all dependencies:**
 
 ```bash
-# Install frontend dependencies
-cd frontend
-npm install
+# Install everything (recommended)
+make install
 
-# Install backend dependencies
-cd ../api
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-pip install -r requirements.txt
+# Or install separately:
+make install-frontend  # Frontend dependencies
+make install-backend   # Backend dependencies (creates venv automatically)
 ```
 
 2. **Set up environment variables:**
 
-Create `.env` file in the root:
+Create `api/.env` file:
+```bash
+OPENROUTER_API_KEY=your_openrouter_key_here
 ```
-OPENAI_API_KEY=your_key_here
+
+Optional (for additional features):
+```
+OPENAI_API_KEY=your_openai_key_here
+MESHY_API_KEY=your_meshy_key_here
 ```
 
 3. **Start development servers:**
 
-From the root directory:
+**Recommended (foreground with auto-reload):**
 ```bash
-npm start
+make dev
+```
+Press `Ctrl+C` to stop.
+
+**Or start in background:**
+```bash
+make start    # Start in background
+make stop     # Stop services
+tail -f logs/dev.log  # View logs
 ```
 
 This will start:
 - Frontend on `http://localhost:3000`
 - Backend API on `http://localhost:8000`
 
-Or run separately:
-```bash
-# Frontend only
-npm run dev:frontend
+### Quick Commands
 
-# Backend only
-npm run dev:backend
+```bash
+make dev          # Start both (foreground, auto-reload)
+make start        # Start both (background)
+make stop         # Stop all services
+make dev-frontend # Frontend only
+make dev-backend  # Backend only
 ```
+
+See [DEVELOPMENT.md](./DEVELOPMENT.md) for detailed development guide.
 
 ## 📁 Project Structure
 
